@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Eren Abi'nin Beşlisi</title>
+    <meta
+      name="description"
+      content="Türkçe kelime tahmin oyunu. Eren Abi için hazırlandı."
+    >
+    <meta name="theme-color" content="#f4efe7">
+    <meta property="og:title" content="Eren Abi'nin Beşlisi">
+    <meta
+      property="og:description"
+      content="Altı denemede beş harfli Türkçe kelimeyi bul."
+    >
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f4efe7;
+        --ink: #1f2428;
+        --muted: #6a6760;
+        --line: #cfc7ba;
+        --panel: #fffaf1;
+        --green: #3d8b5f;
+        --amber: #c79534;
+        --gray: #626b73;
+        --coral: #cb5d4f;
+        --teal: #277f83;
+        --key: #e5dac9;
+        --key-ink: #1f2428;
+        --shadow: 0 18px 50px rgba(39, 31, 20, 0.12);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 18% 20%, rgba(61, 139, 95, 0.14), transparent 26rem),
+          radial-gradient(circle at 84% 14%, rgba(203, 93, 79, 0.11), transparent 22rem),
+          linear-gradient(135deg, rgba(31, 36, 40, 0.05) 25%, transparent 25%) 0 0 / 22px 22px,
+          var(--paper);
+        color: var(--ink);
+      }
+
+      button {
+        border: 0;
+        color: inherit;
+        font: inherit;
+      }
+
+      .app {
+        min-height: 100svh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 16px;
+        width: min(100%, 620px);
+        margin: 0 auto;
+        padding: 16px;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
+        align-items: center;
+        min-height: 52px;
+        border-bottom: 1px solid rgba(31, 36, 40, 0.15);
+      }
+
+      .brand {
+        min-width: 0;
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(22px, 7vw, 38px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .date {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .icon-button,
+      .action-button {
+        display: inline-grid;
+        place-items: center;
+        min-width: 40px;
+        min-height: 40px;
+        border: 1px solid rgba(31, 36, 40, 0.14);
+        border-radius: 8px;
+        background: rgba(255, 250, 241, 0.84);
+        box-shadow: 0 8px 24px rgba(39, 31, 20, 0.08);
+        cursor: pointer;
+      }
+
+      .icon-button:hover,
+      .action-button:hover {
+        transform: translateY(-1px);
+      }
+
+      .stage {
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 18px;
+      }
+
+      .board-shell {
+        width: min(100%, 430px);
+      }
+
+      .board {
+        display: grid;
+        gap: 8px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .tile {
+        aspect-ratio: 1;
+        display: grid;
+        place-items: center;
+        border: 2px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 250, 241, 0.68);
+        color: var(--ink);
+        font-size: clamp(28px, 10vw, 50px);
+        font-weight: 850;
+        text-transform: uppercase;
+        transform-style: preserve-3d;
+        transition:
+          transform 180ms ease,
+          border-color 160ms ease,
+          background 160ms ease,
+          color 160ms ease;
+        user-select: none;
+      }
+
+      .tile.filled {
+        border-color: #8d8373;
+        animation: pop 120ms ease;
+      }
+
+      .tile.reveal {
+        animation: flip 520ms ease forwards;
+      }
+
+      .tile.correct,
+      .key.correct {
+        background: var(--green);
+        border-color: var(--green);
+        color: #fff;
+      }
+
+      .tile.present,
+      .key.present {
+        background: var(--amber);
+        border-color: var(--amber);
+        color: #fff;
+      }
+
+      .tile.absent,
+      .key.absent {
+        background: var(--gray);
+        border-color: var(--gray);
+        color: #fff;
+      }
+
+      .row.shake {
+        animation: shake 380ms ease;
+      }
+
+      .toast {
+        min-height: 36px;
+        display: grid;
+        place-items: center;
+        padding: 0 14px;
+        border-radius: 8px;
+        background: rgba(31, 36, 40, 0.9);
+        color: #fffaf1;
+        font-size: 14px;
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: opacity 150ms ease, transform 150ms ease;
+        pointer-events: none;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .keyboard {
+        width: min(100%, 560px);
+        display: grid;
+        gap: 7px;
+      }
+
+      .keyboard-row {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .key {
+        min-width: 0;
+        height: 48px;
+        flex: 1 1 0;
+        max-width: 44px;
+        border-radius: 8px;
+        background: var(--key);
+        color: var(--key-ink);
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 4px 0 rgba(31, 36, 40, 0.12);
+        transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      }
+
+      .key:active {
+        transform: translateY(3px);
+        box-shadow: 0 1px 0 rgba(31, 36, 40, 0.18);
+      }
+
+      .key.wide {
+        flex: 1.7 1 0;
+        max-width: 70px;
+        font-size: 17px;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 44px;
+      }
+
+      .action-button {
+        grid-auto-flow: column;
+        gap: 8px;
+        padding: 0 14px;
+        background: var(--ink);
+        color: #fffaf1;
+        font-weight: 760;
+      }
+
+      .action-button.secondary {
+        background: var(--panel);
+        color: var(--ink);
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        width: min(100%, 430px);
+      }
+
+      .stat {
+        min-height: 58px;
+        display: grid;
+        place-items: center;
+        align-content: center;
+        border: 1px solid rgba(31, 36, 40, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 250, 241, 0.78);
+      }
+
+      .stat strong {
+        font-size: 23px;
+      }
+
+      .stat span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .dialog-backdrop {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        padding: 20px;
+        background: rgba(31, 36, 40, 0.34);
+        z-index: 10;
+      }
+
+      .dialog-backdrop.open {
+        display: grid;
+      }
+
+      .dialog {
+        width: min(100%, 420px);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        padding: 20px;
+      }
+
+      .dialog h2 {
+        margin: 0 0 12px;
+        font-size: 22px;
+        letter-spacing: 0;
+      }
+
+      .dialog p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .samples {
+        display: grid;
+        gap: 8px;
+        margin: 14px 0 18px;
+      }
+
+      .sample-row {
+        display: grid;
+        grid-template-columns: repeat(5, 32px);
+        gap: 5px;
+      }
+
+      .sample-row .tile {
+        width: 32px;
+        font-size: 17px;
+        border-width: 1px;
+      }
+
+      .footer {
+        min-height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @keyframes pop {
+        50% {
+          transform: scale(1.08);
+        }
+      }
+
+      @keyframes flip {
+        0% {
+          transform: rotateX(0deg);
+        }
+
+        45% {
+          transform: rotateX(90deg);
+        }
+
+        55% {
+          transform: rotateX(90deg);
+        }
+
+        100% {
+          transform: rotateX(0deg);
+        }
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+
+        20%,
+        60% {
+          transform: translateX(-7px);
+        }
+
+        40%,
+        80% {
+          transform: translateX(7px);
+        }
+      }
+
+      @media (max-width: 520px) {
+        .app {
+          padding: 10px;
+          gap: 10px;
+        }
+
+        .board {
+          gap: 6px;
+        }
+
+        .row {
+          gap: 6px;
+        }
+
+        .keyboard {
+          gap: 5px;
+        }
+
+        .keyboard-row {
+          gap: 4px;
+        }
+
+        .key {
+          height: 44px;
+          border-radius: 7px;
+          font-size: 13px;
+        }
+
+        .key.wide {
+          font-size: 15px;
+        }
+
+        .stats {
+          gap: 6px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <button class="icon-button" id="helpButton" aria-label="Yardım" title="Yardım">?</button>
+        <div class="brand">
+          <h1>Eren Abi'nin Beşlisi</h1>
+          <div class="date" id="gameDate"></div>
+        </div>
+        <button class="icon-button" id="resetButton" aria-label="Yeni oyun" title="Yeni oyun">↺</button>
+      </header>
+
+      <section class="stage" aria-label="Oyun alani">
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        <div class="board-shell">
+          <div class="board" id="board" aria-label="Tahmin tahtasi"></div>
+        </div>
+        <div class="stats" aria-label="Istatistikler">
+          <div class="stat"><strong id="played">0</strong><span>Oyun</span></div>
+          <div class="stat"><strong id="wins">0</strong><span>Galibiyet</span></div>
+          <div class="stat"><strong id="streak">0</strong><span>Seri</span></div>
+          <div class="stat"><strong id="best">0</strong><span>En iyi</span></div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="keyboard" id="keyboard" aria-label="Klavye"></div>
+        <div class="actions">
+          <button class="action-button secondary" id="copyButton">↗ Paylaş</button>
+          <button class="action-button" id="againButton">↺ Yeni</button>
+        </div>
+        <div class="footer">Beş harf. Altı hak. Türkçe harfler.</div>
+      </footer>
+    </main>
+
+    <div class="dialog-backdrop" id="helpDialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <div class="dialog">
+        <h2 id="helpTitle">Renkler</h2>
+        <p>Yeşil tam yerinde, sarı kelimede ama başka yerde, gri kelimede yok.</p>
+        <div class="samples" aria-hidden="true">
+          <div class="sample-row">
+            <div class="tile correct">E</div><div class="tile">R</div><div class="tile">E</div><div class="tile">N</div><div class="tile">I</div>
+          </div>
+          <div class="sample-row">
+            <div class="tile">B</div><div class="tile present">E</div><div class="tile">S</div><div class="tile">L</div><div class="tile">I</div>
+          </div>
+          <div class="sample-row">
+            <div class="tile">K</div><div class="tile">A</div><div class="tile">L</div><div class="tile absent">P</div><div class="tile">A</div>
+          </div>
+        </div>
+        <button class="action-button" id="closeHelp">Tamam</button>
+      </div>
+    </div>
+
+    <script>
+      const answerWords = [
+        "ACILI", "AFILI", "AGACI", "AHLAK", "AKICI", "AKLIN", "ALACA", "ALGIN", "ALKIS", "ALTIN",
+        "AMBAR", "ANLAM", "APACI", "ARENA", "ARIZA", "ARMUT", "ARSIV", "ASILI", "ASKER", "ATLAS",
+        "AVANS", "AYDIN", "AYLIK", "AYRAN", "AZILI", "BADEM", "BAHAR", "BAKIR", "BALIK", "BASKI",
+        "BASLI", "BAYIR", "BAYKU", "BAYRA", "BEDEN", "BEKAR", "BELGE", "BELLI", "BENEK", "BERAT",
+        "BESIK", "BICAK", "BILEK", "BILGI", "BILIM", "BIRAZ", "BIREY", "BOGAZ", "BOLGE", "BORAN",
+        "BOYUT", "BUGUN", "BULUT", "BURCU", "BURUN", "BUYUK", "CABUK", "CAMUR", "CANLI", "CEBIR",
+        "CEKET", "CELIK", "CESIT", "CEVAP", "CICEK", "CIZGI", "COBAN", "COCUK", "CORAP", "CUVAL",
+        "DENIZ", "DERGI", "DERIN", "DEVAM", "DEVIR", "DIKEN", "DILIM", "DINAR", "DIREK", "DOGAL",
+        "DOLAP", "DOLMA", "DONEM", "DORUK", "DUMAN", "DURAK", "DURUM", "DUVAR", "DUZEN", "EKRAN",
+        "ELMAS", "EMLAK", "EMNIN", "EMRAH", "ENGEL", "ERKEN", "ESANS", "ESMER", "ESPRI", "ESYAM",
+        "ETKEN", "FALCI", "FENER", "FERAH", "FIKIR", "FIRIN", "FISKI", "FISTI", "GECER", "GELIN",
+        "GEMIC", "GENIS", "GERCI", "GEYIK", "GIDIS", "GIRIS", "GIZEM", "GOLGE", "GONUL", "GOREV",
+        "GUCUN", "GUNES", "GURUR", "GUVEN", "HABER", "HAKLI", "HALAT", "HAMLE", "HARBI", "HASAR",
+        "HATIR", "HAVUC", "HAYAL", "HAYAT", "HIZLI", "HUZUR", "ILERI", "ILGIN", "INSAN", "IPEKY",
+        "ISARE", "ISLIK", "ISTEK", "IZLIK", "KABAK", "KABIN", "KADAR", "KADEM", "KAGIT", "KAHIR",
+        "KALAN", "KALEM", "KALIN", "KALIP", "KALMA", "KANAL", "KANAT", "KAPAK", "KAPAN", "KAPIK",
+        "KARAR", "KARLI", "KARMA", "KARTI", "KASIK", "KATKI", "KAVUN", "KAYAK", "KAYIP", "KAZAN",
+        "KEBAP", "KECIS", "KEDER", "KEFIR", "KEMAN", "KENAR", "KENDI", "KESIN", "KILIM", "KIRIK",
+        "KISIM", "KITAP", "KIVAM", "KOLAY", "KONAK", "KONUM", "KOPUK", "KORNA", "KOSUL", "KOTUM",
+        "KOVAN", "KOYUN", "KURAL", "KURGU", "KURUM", "KUTLU", "KUYUM", "LAHIT", "LALEZ", "LIDER",
+        "LIMAN", "LOKMA", "MADEN", "MAGMA", "MAKAS", "MAKUL", "MANTI", "MARTI", "MASAL", "MAYIN",
+        "MEKAN", "MERAK", "MERCI", "MERCY", "METIN", "MEVKI", "MISIR", "MIZAH", "MOTOR", "MUTLU",
+        "NADIR", "NAKIS", "NAMLI", "NEDEN", "NEFES", "NEHIR", "NESIL", "NISAN", "NOKTA", "NURAN",
+        "ODALI", "OKTAN", "OLASI", "OLCUK", "OLGUN", "ORTAK", "OYNAK", "OYUNU", "OZGUR", "PAKET",
+        "PALTO", "PAMUK", "PANEL", "PANIK", "PARCA", "PARKA", "PARLA", "PATEN", "PAZAR", "PELIT",
+        "PERDE", "PISIK", "PIZZA", "PLAKA", "PLATO", "POSET", "RADAR", "RAHAT", "RAKAM", "RENKLI",
+        "RESIM", "ROBOT", "ROKET", "RUHEN", "SAATC", "SABAH", "SABIR", "SAGIR", "SAHIL", "SAKIN",
+        "SALON", "SAMAN", "SANAT", "SANKI", "SAPKA", "SARAY", "SARKI", "SAYGI", "SEHIR", "SEKIL",
+        "SELAM", "SERCE", "SERIN", "SEVGI", "SEZON", "SICAK", "SINAV", "SINIF", "SIRIN", "SIVRI",
+        "SOKAK", "SONRA", "SORGU", "SORUN", "SOZCU", "SULUK", "SURAT", "SUREC", "SURGU", "SUSAM",
+        "TABAK", "TABAN", "TAKAS", "TAKIM", "TALAN", "TAMIR", "TANIK", "TARAF", "TARIM", "TARLA",
+        "TASAR", "TAVAN", "TAVIR", "TEMEL", "TEMIZ", "TENIS", "TERAS", "TERIM", "TOPAK", "TOPLU",
+        "TORBA", "TOSUN", "TUTAR", "TUZAK", "UZMAN", "UZUNU", "VAGON", "VAKIT", "VAPUR", "VARIS",
+        "VATAN", "VEKIL", "VIRAJ", "YABAN", "YAGIZ", "YAKIN", "YALIN", "YANIT", "YARIN", "YASAK",
+        "YATAK", "YAVAS", "YAZAR", "YEMEK", "YEREL", "YETIM", "YIGIN", "YILAN", "YOLCU", "YORUM",
+        "YUKSE", "ZAFER", "ZAMAN", "ZARAR", "ZAYIF", "ZEBRA", "ZEMIN", "ZEYIL", "ZIHIN", "ZORLU"
+      ];
+
+      const extraGuesses = [
+        "ABACI", "ACEMI", "ADALI", "ADETA", "ADRES", "AFGAN", "AGLAT", "AHALI", "AHIZE", "AKBAS",
+        "AKDUT", "AKREP", "ALBAY", "ALEVI", "ALICI", "ALLEM", "AMACI", "ANONS", "ANTEN", "ARDIC",
+        "ASABI", "ASLAN", "ATAMA", "ATLET", "AVARE", "AVUCU", "AYAZI", "AYGIR", "AYLAK", "BABAC",
+        "BACAK", "BAGAJ", "BAGIM", "BAGIR", "BAKAN", "BAKLA", "BALCI", "BALON", "BAMYA", "BASAK",
+        "BASAR", "BATIK", "BAVUL", "BAYAN", "BAYAT", "BECER", "BEDEL", "BEGEN", "BEKCI", "BELDE",
+        "BELKI", "BESIN", "BEYAN", "BIKER", "BITKI", "BOCUK", "BOYUN", "BOZUK", "BUCAK", "BUDUN",
+        "BUGRA", "BUHAR", "BURSA", "BUYUR", "CACIK", "CADDE", "CAHIL", "CAKIL", "CANAN", "CARET",
+        "CEKIC", "CEKIM", "CENAP", "CERCE", "CEVIZ", "CILIZ", "CINAR", "CIRAK", "CIVIK", "CIZIM",
+        "COMAR", "CORBA", "CUMLE", "CUZAM", "DAHIL", "DALGA", "DALIS", "DAMAK", "DAMAR", "DANIS",
+        "DARBE", "DAVET", "DEGER", "DELIL", "DEMEK", "DEMLI", "DENEK", "DENGE", "DERYA", "DESTI",
+        "DETAY", "DIKIS", "DINCI", "DIVAN", "DIYAR", "DIZEL", "DIZGI", "DOKUZ", "DOLUŞ", "DORSE",
+        "DOVIZ", "DUACI", "DUNYA", "DURUS", "DUYAR", "DUYGU", "EDALI", "EDERI", "EFEKT", "EGLEN",
+        "EKSEN", "EKSIK", "ELBET", "ELCIL", "EMEKC", "ENLEM", "ERDEM", "ERGIN", "ERKEN", "ERZAK",
+        "ESKIZ", "ESPRI", "EVLAT", "EVREN", "FACIA", "FAKAT", "FAKIR", "FANUS", "FASIL", "FAYDA",
+        "FELAK", "FERYA", "FETIH", "FIYAT", "FOSIL", "FOTON", "GAILE", "GALIP", "GAMZE", "GARIP",
+        "GAYET", "GAZEL", "GEDIK", "GENEL", "GENIZ", "GERGI", "GEZGI", "GICIK", "GIDER", "GOCER",
+        "GOLET", "GONCA", "GORUS", "GOZCU", "GULUS", "GUMUS", "HACIM", "HAKEM", "HALAY", "HAMAL",
+        "HANEK", "HANIM", "HAPIS", "HARAP", "HARIC", "HASIC", "HASTA", "HATTA", "HAVUZ", "HAYLI",
+        "HESAP", "HICAZ", "HODRI", "HOTEL", "ILAVE", "ILERI", "ILGIC", "ILHAM", "IMKAN", "IMLAK",
+        "INADI", "INCIK", "IRMAK", "ISLAH", "ISLEM", "ISSIZ", "KABLO", "KADIM", "KAFES", "KAHIN",
+        "KAHVE", "KALAS", "KAMER", "KANIT", "KAPUT", "KARGA", "KASAP", "KASLI", "KATIL", "KAVGA",
+        "KAYGI", "KAYMA", "KAZIK", "KECIL", "KEDIM", "KEKIK", "KELAM", "KEMIK", "KESIS", "KESTI",
+        "KILAV", "KIRAC", "KIRAZ", "KISIR", "KIYAK", "KOBRA", "KOKLU", "KOLON", "KOMIK", "KONUK",
+        "KORKU", "KOSKU", "KOTON", "KREMA", "KUBBE", "KUDUZ", "KUMAS", "KUPON", "KURAK", "KURAN",
+        "KURYE", "KUZEY", "KUZUM", "LAKIN", "LASTI", "LAVUK", "LEHIM", "LEVHA", "LISTE", "MADDI",
+        "MAGAZ", "MAHAL", "MAKAM", "MALUM", "MAMUL", "MANAS", "MANGO", "MANTI", "MARUL", "MAVIL",
+        "MECAL", "MEDYA", "MEKAN", "MELEK", "MESAJ", "MESAI", "MEYIL", "MEZAR", "MIRAS", "MIZAN",
+        "MODEL", "MOLLA", "MORAL", "MUCIT", "MUMYA", "NABIZ", "NAHIF", "NAKIT", "NASIL", "NAZAR",
+        "NECAT", "NESNE", "NETIC", "NIHAI", "NISBI", "NIZAM", "NOBET", "NURLU", "OGREN", "OKUMA",
+        "OLMAK", "ONLUK", "OPERA", "ORUCU", "OYALI", "OZLEM", "PAFTA", "PAHAL", "PALAS", "PARKE",
+        "PASAŞ", "PATIK", "PAYDA", "PENCE", "PENYE", "PERON", "PIRIL", "PIYAN", "POLEN", "POLIS",
+        "PUSAT", "RAKET", "RAPOR", "REKOR", "RESEN", "RESMI", "ROMAN", "ROTOR", "RUTIN", "SABIT",
+        "SADET", "SAFHA", "SAHNE", "SAHUR", "SAKIZ", "SALIK", "SANCI", "SANIK", "SANSI", "SAPAN",
+        "SARIL", "SAVAS", "SAYIN", "SEANS", "SEBEP", "SEDIR", "SEFER", "SEHER", "SEKME", "SELIM",
+        "SEPET", "SERAP", "SERGI", "SESLI", "SEVAP", "SIFIR", "SIHIR", "SIMIT", "SINIR", "SISLI",
+        "SIVIL", "SOGAN", "SOMON", "SONAR", "SONUC", "SORAR", "SOVUS", "SOYLU", "SUCUK", "SUKUT",
+        "SUREK", "SURUŞ", "SUTUN", "TAhta", "TAKIP", "TALIM", "TANIM", "TARIF", "TASMA", "TAVIZ",
+        "TEKIL", "TELAS", "TEMAS", "TENHA", "TESIR", "TIMAR", "TOKAT", "TOKYO", "TONER", "TOPCU",
+        "TUFAN", "TULUM", "TUMOR", "TURBO", "TUTKU", "UCGEN", "UMACI", "UMMAN", "UNITE", "USLUP",
+        "UYARI", "UZERI", "VAHIM", "VAKAR", "VAKUM", "VARAK", "VARAN", "VARYA", "VASIF", "VICIK",
+        "VURGU", "YABCI", "YAGCI", "YALAN", "YALPA", "YAMAC", "YANAK", "YAPIM", "YARAR", "YASLI",
+        "YATAY", "YAYLA", "YENIK", "YETER", "YIGIN", "YIRIK", "YOGUN", "YOKUS", "YORGA", "YUKLU",
+        "YUMAK", "YUNUS", "ZABIT", "ZAFIR", "ZAHIR", "ZEKAT", "ZENGI", "ZERRE", "ZEVKI", "ZIMBA"
+      ];
+
+      const rows = 6;
+      const cols = 5;
+      const storageKey = "eren-beslisi-state-v1";
+      const statsKey = "eren-beslisi-stats-v1";
+      const alphabet = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ".split("");
+      const keyboardRows = ["ERTYUİOPĞÜ", "ASDFGHJKLŞ", "ZXCVBNMÇÖ"];
+      const board = document.querySelector("#board");
+      const keyboard = document.querySelector("#keyboard");
+      const toast = document.querySelector("#toast");
+      const dateLabel = document.querySelector("#gameDate");
+      const playableAnswers = `
+        AÇLIK ADETA AHENK AKŞAM ALÇAK ALMAK ALTIN ANCAK ANLAM ARACI ARIZA ARTIK AYRAN
+        BADEM BAHAR BAKIM BALIK BASİT BASKI BEBEK BEDEN BEKÇİ BELGE BELKİ BIÇAK BİLEK
+        BİLGİ BİLİM BİTKİ BİRAZ BİREY BOZUK BÖLGE BÖREK BUGÜN BULUT BURUN BÜYÜK ÇABUK
+        ÇADIR ÇAKIL ÇANTA ÇATAL ÇEKİM ÇELİK CEVAP ÇEVİK ÇİÇEK ÇİZGİ ÇOBAN ÇOCUK ÇORAP
+        DAMAK DAMAR DAVUL DEĞER DELİK DENİZ DERGİ DERİN DETAY DİKEN DİKİŞ DİLİM DİREK
+        DOĞAL DOLAP DÖNER DÜNYA DURUM DUVAR DÜZEN EKRAN EKSİK ELMAS EMLAK ENGEL ERDEM
+        ERKEN ESNAF EVLAT EVREN FAKİR FASIL FENER FERAH FİKİR FIRIN FİDAN FİYAT GELİN
+        GENEL GENİŞ GEYİK GİRİŞ GİZEM GÖLGE GÖREV GÜÇLÜ GÜNEŞ GÜVEN GÜZEL HABER HAKİM
+        HAKLI HALAT HAMLE HANGİ HASTA HAYAL HAYAT HIZLI HUZUR İÇERİ İDARE İFADE İHALE
+        İLERİ İMKAN İNSAN İSTEK İŞLEM İZOLE KABAK KABLO KADIN KAFES KAĞIT KALEM KALIN
+        KALIP KANAL KANAT KAPAK KARAR KARGO KARIŞ KASIM KAVUN KAYAK KAYIP KAZAN KEBAP
+        KEMAN KEMİK KENAR KESİM KESİN KILIK KİLİM KİTAP KOLAY KOMİK KONAK KONUM KONUK
+        KORKU KOŞUL KURAL KURGU KURUM KUZEY KÜÇÜK LİDER LİMAN LOKUM LÜTUF MADEN MAKAM
+        MAKAS MAKUL MANTI MARTI MASAL MAYIN MEKAN MERAK MESAJ METİN MİZAH MODEL MOTOR
+        MUTLU MÜZİK NADİR NAKİT NAMAZ NASIL NEDEN NEFES NEHİR NESİL NİYET NOKTA NÖBET
+        ODALI OKUMA OLGUN ORTAK ÖNDER ÖNERİ ÖZGÜR PAKET PAMUK PANEL PANİK PARÇA PASTA
+        PATİK PAZAR PERDE PERON PETEK PİYAZ POLİS RAHAT RAKAM RAKİP REÇEL RESİM ROMAN
+        ROZET SABAH SABİT SABIR SAHİL SAKİN SAKIZ SALON SANAT SANIK SANKİ SARAY SAVAŞ
+        SAYGI SEANS SEBEP SELAM SEPET SERGİ SERİN SEVGİ SICAK SIFIR SINAV SINIF SİNİR
+        SİVRİ SOKAK SONUÇ SORUN SÖZCÜ SÜLÜK SÜREÇ SÜRÜŞ SÜTUN TABAK TABAN TAKİP TAKIM
+        TALEP TALİH TAMİR TANIK TANIM TARAF TARIM TARLA TAVAN TAVIR TEKİL TEMİZ TENİS
+        TERAS TERİM TOPUK TORBA TUTAR TUZAK UÇMAK UYGUN UZMAN ÜZGÜN VAGON VAKİT VAPUR
+        VARIŞ VATAN VEKİL VİRAJ YABAN YAĞIŞ YAKIN YALIN YANIT YAPAY YARIN YASAK YATAK
+        YAVAŞ YAZAR YEMEK YEREL YEŞİL YETİM YIĞIN YILAN YOĞUN YOKUŞ YORUM YÜREK YÜZEY
+        ZAMAN ZARAR ZAYIF ZEMİN ZİHİN ZORLU
+      `.trim().split(/\s+/).map(cleanWord);
+      const allWords = new Set([...playableAnswers, ...extraGuesses].map(cleanWord).filter((word) => word.length === cols));
+
+      let state = loadState();
+      let toastTimer = null;
+
+      function cleanWord(word) {
+        return word
+          .toLocaleUpperCase("tr-TR")
+          .replaceAll("Â", "A")
+          .replaceAll("Î", "I")
+          .replaceAll("Û", "U")
+          .replace(/[^ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ]/g, "");
+      }
+
+      function todayKey() {
+        const now = new Date();
+        return new Intl.DateTimeFormat("sv-SE", {
+          timeZone: "Europe/Istanbul",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }).format(now);
+      }
+
+      function dayIndex(key) {
+        const start = Date.UTC(2026, 4, 10);
+        const current = Date.UTC(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, Number(key.slice(8, 10)));
+        return Math.max(0, Math.floor((current - start) / 86400000));
+      }
+
+      function pickDailyWord(key) {
+        return playableAnswers[(dayIndex(key) * 37 + 12) % playableAnswers.length];
+      }
+
+      function pickRandomWord() {
+        const seed = Math.floor(Math.random() * playableAnswers.length);
+        return playableAnswers[seed];
+      }
+
+      function newState(mode = "daily") {
+        const key = todayKey();
+        return {
+          key,
+          mode,
+          answer: mode === "daily" ? pickDailyWord(key) : pickRandomWord(),
+          guesses: [],
+          current: "",
+          finished: false,
+          won: false
+        };
+      }
+
+      function loadState() {
+        try {
+          const stored = JSON.parse(localStorage.getItem(storageKey));
+          if (stored && stored.key === todayKey() && stored.answer && Array.isArray(stored.guesses)) {
+            return stored;
+          }
+        } catch {}
+        return newState("daily");
+      }
+
+      function saveState() {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+      }
+
+      function loadStats() {
+        try {
+          return {
+            played: 0,
+            wins: 0,
+            streak: 0,
+            best: 0,
+            ...JSON.parse(localStorage.getItem(statsKey))
+          };
+        } catch {
+          return { played: 0, wins: 0, streak: 0, best: 0 };
+        }
+      }
+
+      function saveStats(stats) {
+        localStorage.setItem(statsKey, JSON.stringify(stats));
+      }
+
+      function paintStats() {
+        const stats = loadStats();
+        document.querySelector("#played").textContent = stats.played;
+        document.querySelector("#wins").textContent = stats.wins;
+        document.querySelector("#streak").textContent = stats.streak;
+        document.querySelector("#best").textContent = stats.best;
+      }
+
+      function renderBoard() {
+        board.innerHTML = "";
+        for (let row = 0; row < rows; row++) {
+          const rowEl = document.createElement("div");
+          rowEl.className = "row";
+          rowEl.dataset.row = row;
+          const letters = row < state.guesses.length ? state.guesses[row] : row === state.guesses.length ? state.current : "";
+          const result = row < state.guesses.length ? scoreGuess(state.guesses[row], state.answer) : [];
+          for (let col = 0; col < cols; col++) {
+            const tile = document.createElement("div");
+            tile.className = "tile";
+            tile.textContent = letters[col] || "";
+            if (letters[col]) tile.classList.add("filled");
+            if (result[col]) tile.classList.add(result[col]);
+            rowEl.append(tile);
+          }
+          board.append(rowEl);
+        }
+      }
+
+      function renderKeyboard() {
+        keyboard.innerHTML = "";
+        const letterStates = keyboardState();
+        for (const letters of keyboardRows) {
+          const row = document.createElement("div");
+          row.className = "keyboard-row";
+          if (letters.startsWith("Z")) {
+            row.append(keyButton("ENTER", "↵", "wide"));
+          }
+          for (const letter of letters) {
+            const button = keyButton(letter, letter);
+            if (letterStates[letter]) button.classList.add(letterStates[letter]);
+            row.append(button);
+          }
+          if (letters.startsWith("Z")) {
+            row.append(keyButton("BACKSPACE", "⌫", "wide"));
+          }
+          keyboard.append(row);
+        }
+      }
+
+      function keyButton(value, label, extra = "") {
+        const button = document.createElement("button");
+        button.className = `key ${extra}`.trim();
+        button.type = "button";
+        button.textContent = label;
+        button.dataset.key = value;
+        button.setAttribute("aria-label", value);
+        return button;
+      }
+
+      function render() {
+        dateLabel.textContent = state.mode === "daily" ? `Günlük oyun · ${state.key}` : "Serbest oyun";
+        renderBoard();
+        renderKeyboard();
+        paintStats();
+      }
+
+      function keyboardState() {
+        const rank = { correct: 3, present: 2, absent: 1 };
+        const states = {};
+        for (const guess of state.guesses) {
+          scoreGuess(guess, state.answer).forEach((result, index) => {
+            const letter = guess[index];
+            if (!states[letter] || rank[result] > rank[states[letter]]) {
+              states[letter] = result;
+            }
+          });
+        }
+        return states;
+      }
+
+      function scoreGuess(guess, answer) {
+        const result = Array(cols).fill("absent");
+        const remaining = {};
+        for (let i = 0; i < cols; i++) {
+          if (guess[i] === answer[i]) {
+            result[i] = "correct";
+          } else {
+            remaining[answer[i]] = (remaining[answer[i]] || 0) + 1;
+          }
+        }
+        for (let i = 0; i < cols; i++) {
+          if (result[i] === "correct") continue;
+          if (remaining[guess[i]]) {
+            result[i] = "present";
+            remaining[guess[i]] -= 1;
+          }
+        }
+        return result;
+      }
+
+      function addLetter(letter) {
+        if (state.finished || state.current.length >= cols) return;
+        state.current += letter;
+        saveState();
+        render();
+      }
+
+      function removeLetter() {
+        if (state.finished) return;
+        state.current = state.current.slice(0, -1);
+        saveState();
+        render();
+      }
+
+      function submitGuess() {
+        if (state.finished) return;
+        const guess = cleanWord(state.current);
+        if (guess.length !== cols) {
+          bump("Beş harf lazım");
+          return;
+        }
+        if (!allWords.has(guess)) {
+          bump("Listede yok");
+          return;
+        }
+
+        state.guesses.push(guess);
+        state.current = "";
+        state.won = guess === state.answer;
+        state.finished = state.won || state.guesses.length === rows;
+        saveState();
+        render();
+        revealLastRow();
+
+        if (state.finished) {
+          setTimeout(finishGame, 850);
+        }
+      }
+
+      function revealLastRow() {
+        const rowEl = board.querySelector(`[data-row="${state.guesses.length - 1}"]`);
+        if (!rowEl) return;
+        [...rowEl.children].forEach((tile, index) => {
+          tile.style.animationDelay = `${index * 90}ms`;
+          tile.classList.add("reveal");
+        });
+      }
+
+      function finishGame() {
+        const stats = loadStats();
+        const alreadyCounted = `${state.key}:${state.mode}:${state.answer}`;
+        if (stats.lastFinished !== alreadyCounted) {
+          stats.played += 1;
+          if (state.won) {
+            stats.wins += 1;
+            stats.streak += 1;
+            stats.best = stats.best ? Math.min(stats.best, state.guesses.length) : state.guesses.length;
+          } else {
+            stats.streak = 0;
+          }
+          stats.lastFinished = alreadyCounted;
+          saveStats(stats);
+        }
+        paintStats();
+        showToast(state.won ? winText() : `Kelime: ${state.answer}`);
+      }
+
+      function winText() {
+        return ["İlk atış!", "Net iş.", "Güzel döndü.", "Toparladın.", "Son viraj.", "Eren abi sabrı."][state.guesses.length - 1];
+      }
+
+      function bump(message) {
+        const row = board.querySelector(`[data-row="${state.guesses.length}"]`);
+        row?.classList.remove("shake");
+        requestAnimationFrame(() => row?.classList.add("shake"));
+        showToast(message);
+      }
+
+      function showToast(message) {
+        clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.classList.add("show");
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 1700);
+      }
+
+      async function shareResult() {
+        const marks = state.guesses
+          .map((guess) => scoreGuess(guess, state.answer).map((mark) => ({ correct: "🟩", present: "🟨", absent: "⬜" })[mark]).join(""))
+          .join("\n");
+        const score = state.won ? `${state.guesses.length}/${rows}` : `X/${rows}`;
+        const text = `Eren Abi'nin Beşlisi ${state.key} ${score}\n${marks}\n${location.href}`;
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast("Kopyalandı");
+        } catch {
+          showToast("Kopyalanamadı");
+        }
+      }
+
+      function restart(mode = "random") {
+        state = newState(mode);
+        saveState();
+        render();
+        showToast(mode === "daily" ? "Günlük oyun" : "Yeni kelime");
+      }
+
+      document.addEventListener("keydown", (event) => {
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        const key = event.key;
+        if (key === "Enter") submitGuess();
+        else if (key === "Backspace") removeLetter();
+        else {
+          const letter = cleanWord(key);
+          if (letter.length === 1 && alphabet.includes(letter)) addLetter(letter);
+        }
+      });
+
+      keyboard.addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        const value = button.dataset.key;
+        if (value === "ENTER") submitGuess();
+        else if (value === "BACKSPACE") removeLetter();
+        else addLetter(value);
+      });
+
+      document.querySelector("#resetButton").addEventListener("click", () => restart("daily"));
+      document.querySelector("#againButton").addEventListener("click", () => restart("random"));
+      document.querySelector("#copyButton").addEventListener("click", shareResult);
+      document.querySelector("#helpButton").addEventListener("click", () => document.querySelector("#helpDialog").classList.add("open"));
+      document.querySelector("#closeHelp").addEventListener("click", () => document.querySelector("#helpDialog").classList.remove("open"));
+      document.querySelector("#helpDialog").addEventListener("click", (event) => {
+        if (event.target.id === "helpDialog") event.currentTarget.classList.remove("open");
+      });
+
+      render();
+    </script>
+  </body>
+</html>

@@ -488,6 +488,7 @@
       </div>
     </div>
 
+    <script src="valid-guesses.js"></script>
     <script>
       const answerWords = [
         "ACILI", "AFILI", "AGACI", "AHLAK", "AKICI", "AKLIN", "ALACA", "ALGIN", "ALKIS", "ALTIN",
@@ -611,7 +612,12 @@
         YAVAŞ YAZAR YEMEK YEREL YEŞİL YETİM YIĞIN YILAN YOĞUN YOKUŞ YORUM YÜREK YÜZEY
         ZAMAN ZARAR ZAYIF ZEMİN ZİHİN ZORLU
       `.trim().split(/\s+/).map(cleanWord);
-      const allWords = new Set([...playableAnswers, ...extraGuesses].map(cleanWord).filter((word) => word.length === cols));
+      const validGuesses = Array.isArray(window.VALID_GUESSES_TR) ? window.VALID_GUESSES_TR : [];
+      const allWords = new Set(
+        [...playableAnswers, ...answerWords, ...extraGuesses, ...validGuesses]
+          .map(cleanWord)
+          .filter((word) => word.length === cols)
+      );
 
       let state = loadState();
       let toastTimer = null;
